@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html>
+<head>
+     <!-- 检查 viewport 设置是否正确 -->
+     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        /* A simple CSS reset that removes the default margin, padding, and border of all elements */
+        * {
+            margin: 0;
+        }
+
+        /*
+          5. Improve media defaults
+        */
+        img,
+        picture,
+        video,
+        canvas,
+        svg {
+            display: block;
+            max-width: 100%;
+        }
+
+        /*
+          6. Remove built-in form typography styles
+        */
+        input,
+        button,
+        textarea,
+        select {
+            font: inherit;
+        }
+
+        /*
+          7. Avoid text overflows
+        */
+        p,
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            overflow-wrap: break-word;
+        }
+
+        /*
+          8. Create a root stacking context
+        */
+        #root,
+        #__next {
+            isolation: isolate;
+        }
+
+        code,
+        kbd,
+        samp {
+            font-family: monospace, monospace;
+            /* 1 */
+            font-size: 1em;
+            /* 2 */
+        }
+
+        p {
+            font-family: "Trebuchet MS", Verdana, sans-serif;
+        }
+
+
+
+        @supports (-webkit-touch-callout: none) {
+            body {
+                -webkit-user-select: none;
+                -webkit-tap-highlight-color: transparent;
+                /* Disable tap highlight */
+            }
+        }
+
+        html {
+            -webkit-user-select: none;
+            /* Disable text selection */
+            -webkit-touch-callout: none;
+            -webkit-tap-highlight-color: transparent;
+            /* Disable tap highlight */
+        }
+
+        #cursor-top, #cursor-bottom {
+            position: absolute;
+            display: none;
+            z-index: 1000;
+        }
+
+        /*.rectangle {
+            position: absolute;
+            border: 1px solid #0696D7;
+            display: none;
+        }*/
+
+        .point{
+            position:absolute;
+            border: 1px solid #000000;
+            background-color: #ffffff;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            z-index: 1000;
+        }
+
+        .sketch{
+            position:absolute;
+            border: 2px solid #93d1ed;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(147, 209, 237, 0.5);    /* 添加填充色，使用与边框相同的颜色*/
+            width: 200px;
+            height: 200px;
+            box-sizing: border-box;
+            z-index: 1000;
+    /* 或者使用半透明填充色 */
+        }
+
+        
+        .snackbar {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgb(255, 255, 255);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            width: calc(100% - 128px);  /*两边各64px的边距*/
+            max-width: 600px;           /* 可选：设置最大宽度*/
+            padding: 8px 12px;
+            z-index: 2000;
+            border-radius: 4px;
+            min-height: 40px;
+            max-height: 140px;
+            display: flex;
+            align-items: center;
+            font-size: 18px ;
+        }
+
+        .snackbar p {
+            margin: 0;
+            width: 100%;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;       /*显示行数*/
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-align: center;
+          }
+
+        .snackbar code {
+              vertical-align: middle;  /* code 标签垂直对齐*/
+          }
+
+
+        /* 上下两栏布局 */
+        .split-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .top-section, .bottom-section {
+            position: relative;
+            height: 50vh;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .top-section {
+            border-bottom: 1px solid #ccc;
+        }
+
+        .section-label {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: rgba(255, 255, 255, 0.7);
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            z-index: 1000;
+        }
+
+        /* CSS */
+        .grid-container {
+            position: relative;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            z-index: 0;
+        }
+       
+    </style>    
+</head>
+
+<body>
+    
+    <div class="split-container">
+        <!-- 上半部分 -->
+        <div class="top-section">
+            <div class="section-label">Single color cursor</div>
+            <div class="grid-container">
+                <img src="assets/gird.png" alt="grid background" style="height: 100%; width: auto; object-fit: cover;">
+            </div>
+            <div class="sketch-container" style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 1;">
+                <div class="sketch" style="width: 150px; height: 150px;"></div>
+            </div>
+            <svg id="cursor-top" width="87" height="87" viewBox="0 0 87 87" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <line y1="43.5" x2="38" y2="43.5" stroke="black" />
+                <line x1="49" y1="43.5" x2="87" y2="43.5" stroke="black" />
+                <line x1="43.5" y1="38" x2="43.5" y2="2.18557e-08" stroke="black" />
+                <line x1="43.5" y1="87" x2="43.5" y2="49" stroke="black" />
+                <rect x="38.5" y="38.5" width="10" height="10" stroke="black" />
+            </svg>
+        </div>
+
+        <!-- 下半部分 -->
+        <div class="bottom-section">
+            <div class="section-label">Contrast color cursor</div>
+            <div class="grid-container">
+                <img src="assets/gird.png" alt="grid background" style="height: 100%; width: auto; object-fit: cover;">
+            </div>
+            <div class="sketch-container" style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 1;">
+                <div class="sketch" style="width: 150px; height: 150px;"></div>
+            </div>
+            <svg id="cursor-bottom" width="71" height="71" viewBox="0 0 71 71" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M36 7L36 4L35 4L35 7L36 7Z" fill="white"/>
+                <path d="M64 36L67 36L67 35L64 35L64 36Z" fill="white"/>
+                <path d="M36 18V13H35V18H36Z" fill="white"/>
+                <path d="M53 36L58 36L58 35L53 35L53 36Z" fill="white"/>
+                <path d="M36 30V24H35V30H36Z" fill="white"/>
+                <path d="M41 36L47 36L47 35L41 35L41 36Z" fill="white"/>
+                <path d="M36 13V8L35 8V13H36Z" fill="#3C3C3C"/>
+                <path d="M58 36L63 36L63 35L58 35L58 36Z" fill="#3C3C3C"/>
+                <path d="M35 0L35 3L36 3L36 -8.74228e-08L35 0Z" fill="#3C3C3C"/>
+                <path d="M71 35L68 35L68 36L71 36L71 35Z" fill="#3C3C3C"/>
+                <path d="M36 24V18H35V24H36Z" fill="#3C3C3C"/>
+                <path d="M47 36L53 36L53 35L47 35L47 36Z" fill="#3C3C3C"/>
+                <path d="M35 64L35 67L36 67L36 64L35 64Z" fill="white"/>
+                <path d="M7 35L4 35L4 36L7 36L7 35Z" fill="white"/>
+                <path d="M35 53L35 58L36 58L36 53L35 53Z" fill="white"/>
+                <path d="M18 35L13 35L13 36L18 36L18 35Z" fill="white"/>
+                <path d="M35 41L35 47L36 47L36 41L35 41Z" fill="white"/>
+                <path d="M30 35L24 35L24 36L30 36L30 35Z" fill="white"/>
+                <path d="M35 58L35 63L36 63L36 58L35 58Z" fill="#3C3C3C"/>
+                <path d="M13 35L8 35L8 36L13 36L13 35Z" fill="#3C3C3C"/>
+                <path d="M36 71L36 68H35L35 71H36Z" fill="#3C3C3C"/>
+                <path d="M0 36L3 36L3 35L4.37114e-08 35L0 36Z" fill="#3C3C3C"/>
+                <path d="M35 47L35 53L36 53L36 47L35 47Z" fill="#3C3C3C"/>
+                <path d="M24 35L18 35L18 36L24 36L24 35Z" fill="#3C3C3C"/>
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M29.327 30.638C29 31.2798 29 32.1198 29 33.8V37.2C29 38.8802 29 39.7202 29.327 40.362C29.6146 40.9265 30.0735 41.3854 30.638 41.673C31.2798 42 32.1198 42 33.8 42H37.2C38.8802 42 39.7202 42 40.362 41.673C40.9265 41.3854 41.3854 40.9265 41.673 40.362C42 39.7202 42 38.8802 42 37.2V33.8C42 32.1198 42 31.2798 41.673 30.638C41.3854 30.0735 40.9265 29.6146 40.362 29.327C39.7202 29 38.8802 29 37.2 29H33.8C32.1198 29 31.2798 29 30.638 29.327C30.0735 29.6146 29.6146 30.0735 29.327 30.638ZM30.218 31.092C30 31.5198 30 32.0799 30 33.2V37.8C30 38.9201 30 39.4802 30.218 39.908C30.4097 40.2843 30.7157 40.5903 31.092 40.782C31.5198 41 32.0799 41 33.2 41H37.8C38.9201 41 39.4802 41 39.908 40.782C40.2843 40.5903 40.5903 40.2843 40.782 39.908C41 39.4802 41 38.9201 41 37.8V33.2C41 32.0799 41 31.5198 40.782 31.092C40.5903 30.7157 40.2843 30.4097 39.908 30.218C39.4802 30 38.9201 30 37.8 30H33.2C32.0799 30 31.5198 30 31.092 30.218C30.7157 30.4097 30.4097 30.7157 30.218 31.092Z" fill="white"/>
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M30.218 31.092C30 31.5198 30 32.0799 30 33.2V37.8C30 38.9201 30 39.4802 30.218 39.908C30.4097 40.2843 30.7157 40.5903 31.092 40.782C31.5198 41 32.0799 41 33.2 41H37.8C38.9201 41 39.4802 41 39.908 40.782C40.2843 40.5903 40.5903 40.2843 40.782 39.908C41 39.4802 41 38.9201 41 37.8V33.2C41 32.0799 41 31.5198 40.782 31.092C40.5903 30.7157 40.2843 30.4097 39.908 30.218C39.4802 30 38.9201 30 37.8 30H33.2C32.0799 30 31.5198 30 31.092 30.218C30.7157 30.4097 30.4097 30.7157 30.218 31.092ZM31.109 31.546C31 31.7599 31 32.0399 31 32.6V38.4C31 38.9601 31 39.2401 31.109 39.454C31.2049 39.6422 31.3578 39.7951 31.546 39.891C31.7599 40 32.0399 40 32.6 40H38.4C38.9601 40 39.2401 40 39.454 39.891C39.6422 39.7951 39.7951 39.6422 39.891 39.454C40 39.2401 40 38.9601 40 38.4V32.6C40 32.0399 40 31.7599 39.891 31.546C39.7951 31.3578 39.6422 31.2049 39.454 31.109C39.2401 31 38.9601 31 38.4 31H32.6C32.0399 31 31.7599 31 31.546 31.109C31.3578 31.2049 31.2049 31.3578 31.109 31.546Z" fill="#3C3C3C"/>
+            </svg>
+        </div>
+    </div>
+
+    <script>
+        /* 初始化变量 */
+        var cursorTop = document.getElementById('cursor-top');
+        var cursorBottom = document.getElementById('cursor-bottom');
+        var start = null;
+        var secondTap = false;
+        var tapCount = 0;
+        var tapTimeout = null;
+        var rectangleCount = 0;
+        var rectangle;
+        
+        /* 记录初始触摸点的变量 */
+        var initialTouch = {
+            x: 0,
+            y: 0
+        };
+
+        /* 记录当前活动区域 */
+        var activeSection = null;
+        var activeCursor = null;
+
+        /* 处理触摸开始事件 */
+        document.addEventListener('touchstart', function (e) {
+            e.preventDefault();
+            clearTimeout(tapTimeout);
+            
+            /* 确定触摸发生在哪个区域 */
+            const touchY = e.touches[0].clientY;
+            const windowHeight = window.innerHeight;
+            const isTopSection = touchY < windowHeight / 2;
+            
+            /* 设置当前活动区域和光标 */
+            activeSection = isTopSection ? document.querySelector('.top-section') : document.querySelector('.bottom-section');
+            activeCursor = isTopSection ? cursorTop : cursorBottom;
+            
+            tapCount++;
+    
+            /* 如果是双击，显示光标 */
+            if (tapCount === 2) {
+                /* 计算相对于活动区域的位置 */
+                const sectionRect = activeSection.getBoundingClientRect();
+                const relativeY = e.touches[0].clientY - sectionRect.top;
+                
+                /* 添加偏移量：向右20px，向上20px */
+                const cursorWidth = activeCursor.getAttribute('width');
+                const cursorHeight = activeCursor.getAttribute('height');
+                const offsetX = 20; /* 向右偏移20px */
+                const offsetY = -40; /* 向上偏移20px */
+                
+                /* 计算光标位置，考虑偏移量 */
+                activeCursor.style.top = (relativeY - cursorHeight/2 + offsetY) + 'px'; /* 光标中心对准触摸点，加上Y轴偏移 */
+                activeCursor.style.left = (e.touches[0].clientX - cursorWidth/2 + offsetX) + 'px'; /* 加上X轴偏移 */
+                activeCursor.style.display = 'block';
+                
+                /* 记录初始触摸点位置 */
+                initialTouch = {
+                    x: e.touches[0].clientX,
+                    y: e.touches[0].clientY
+                };
+            }
+        }, { passive: false });
+
+        /* 处理触摸移动事件 */
+        document.addEventListener('touchmove', function (e) {
+            e.preventDefault();
+
+            if (!activeCursor || activeCursor.style.display !== 'block') return;
+
+            /* 计算触摸点移动的距离 */
+            const deltaX = e.touches[0].clientX - initialTouch.x;
+            const deltaY = e.touches[0].clientY - initialTouch.y;
+
+            /* 获取当前光标位置 */
+            const currentLeft = parseFloat(activeCursor.style.left) || 0;
+            const currentTop = parseFloat(activeCursor.style.top) || 0;
+
+            /* 移动cursor */
+            activeCursor.style.left = (currentLeft + deltaX) + 'px';
+            activeCursor.style.top = (currentTop + deltaY) + 'px';
+            
+            /* 更新初始触摸点位置 */
+            initialTouch.x = e.touches[0].clientX;
+            initialTouch.y = e.touches[0].clientY;
+
+            /* 如果start已定义且不是secondTap，调整矩形大小 */
+            if (start && !secondTap) {
+                rectangle.style.width = (e.touches[0].clientX - start.x) + 'px';
+                rectangle.style.height = (e.touches[0].clientY - start.y) + 'px';
+            }
+
+        }, { passive: false });
+
+        /* 处理触摸结束事件 */
+        document.addEventListener('touchend', function (e) {
+            e.preventDefault();
+
+            if (!activeSection || !activeCursor) return;
+
+            /* 获取当前区域中的sketch */
+            const sketches = activeSection.querySelectorAll('.sketch');
+            
+            /* 如果cursor存在，检查是否与边缘重叠或在内部 */
+            if(activeCursor.style.display === 'block' && sketches.length) {
+                const cursorRect = activeCursor.getBoundingClientRect();
+                const cursorCenterX = cursorRect.left + cursorRect.width / 2;
+                const cursorCenterY = cursorRect.top + cursorRect.height / 2;
+                
+                sketches.forEach(sketch => {
+                    const sketchRect = sketch.getBoundingClientRect();
+                    const tolerance = 5; /* 添加边缘容差值 */
+                    
+                    /* 检查cursor中心是否在sketch内部 */
+                    const isInside = (
+                        cursorCenterX >= sketchRect.left &&
+                        cursorCenterX <= sketchRect.right &&
+                        cursorCenterY >= sketchRect.top &&
+                        cursorCenterY <= sketchRect.bottom
+                    );
+                    
+                    /* 检查是否在边缘容差范围内 */
+                    const isNearEdge = (
+                        Math.abs(cursorCenterX - sketchRect.left) <= tolerance ||
+                        Math.abs(cursorCenterX - sketchRect.right) <= tolerance ||
+                        Math.abs(cursorCenterY - sketchRect.top) <= tolerance ||
+                        Math.abs(cursorCenterY - sketchRect.bottom) <= tolerance
+                    );
+                    
+                    /* 如果在内部且不在边缘容差范围内，改变sketch的颜色和边框 */
+                    if(isInside && !isNearEdge) {
+                        sketch.style.backgroundColor = 'rgba(0, 155, 255, 0.5)';  /* background select state */
+                        sketch.style.borderColor = '#268ff9';  /* border select state */
+                    }
+                    
+                    /* 检查cursor中心是否与边缘重叠（使用容差） */
+                    if(Math.abs(cursorCenterX - sketchRect.left) <= tolerance) {
+                        sketch.style.borderLeftColor = '#268FF9';  /* border select state */
+                        sketch.style.borderLeftWidth = '2px';
+                    }
+                    if(Math.abs(cursorCenterX - sketchRect.right) <= tolerance) {
+                        sketch.style.borderRightColor = '#268FF9';
+                        sketch.style.borderRightWidth = '2px';
+                    }
+                    if(Math.abs(cursorCenterY - sketchRect.top) <= tolerance) {
+                        sketch.style.borderTopColor = '#268FF9';
+                        sketch.style.borderTopWidth = '2px';
+                    }
+                    if(Math.abs(cursorCenterY - sketchRect.bottom) <= tolerance) {
+                        sketch.style.borderBottomColor = '#268FF9';
+                        sketch.style.borderBottomWidth = '2px';
+                    }
+                });
+            }
+
+            /* 原有的touchend逻辑 */
+            if (tapCount < 2) {
+                tapTimeout = setTimeout(function () {
+                    tapCount = 0;
+                }, 300);
+            } else if (tapCount === 2) {
+                /* 不要在双击后立即隐藏光标，让用户可以拖动 */
+                tapCount = 0;
+            }
+
+            /* 只有当没有触摸点时才隐藏光标 */
+            if (e.touches.length === 0 && !e.targetTouches.length) {
+                /* 检查是否是单击结束，而不是拖动结束 */
+                if (Math.abs(initialTouch.x - e.changedTouches[0].clientX) < 10 && 
+                    Math.abs(initialTouch.y - e.changedTouches[0].clientY) < 10) {
+                    if (cursorTop) cursorTop.style.display = 'none';
+                    if (cursorBottom) cursorBottom.style.display = 'none';
+                }
+            }
+
+            if (secondTap) {
+                rectangle.style.background = 'rgba(6, 150, 215, 0.2)';
+                rectangle = null;
+
+                if (!rectangle) {
+                    tapCount = 0;
+                    start = null;
+                    secondTap = false;
+                }
+            }
+            
+            /* 只有当没有触摸点时才重置活动区域和光标引用 */
+            if (e.touches.length === 0 && !e.targetTouches.length) {
+                /* 不要重置活动区域和光标，这样可以保持拖动状态 */
+            }
+        }, { passive: false });
+
+        /* 防止页面在拖动时刷新 */
+        window.addEventListener('touchmove', function (e) {
+            e.preventDefault();
+        }, { passive: false }); /* 使用 passive: false 使 preventDefault() 调用生效 */
+     
+     /* 检测cursor与sketch的重叠 */
+     function checkOverlap() {
+         /* 检查上部分 */
+         checkSectionOverlap(cursorTop, document.querySelector('.top-section'));
+         /* 检查下部分 */
+         checkSectionOverlap(cursorBottom, document.querySelector('.bottom-section'));
+     }
+     
+     function checkSectionOverlap(cursor, section) {
+         if(!cursor || !section || cursor.style.display === 'none') return;
+         
+         const sketches = section.querySelectorAll('.sketch');
+         if(!sketches.length) return;
+         
+         const cursorRect = cursor.getBoundingClientRect();
+         /* 计算cursor中心点坐标 */
+         const cursorCenterX = cursorRect.left + cursorRect.width / 2;
+         const cursorCenterY = cursorRect.top + cursorRect.height / 2;
+         
+         sketches.forEach(sketch => {
+             const sketchRect = sketch.getBoundingClientRect();
+             const tolerance = 5; /* 添加边缘容差值 */
+             
+             /* 检查cursor中心是否与边缘重叠 */
+             const isOnEdge = (
+                 Math.abs(cursorCenterX - sketchRect.left) <= tolerance ||
+                 Math.abs(cursorCenterX - sketchRect.right) <= tolerance ||
+                 Math.abs(cursorCenterY - sketchRect.top) <= tolerance ||
+                 Math.abs(cursorCenterY - sketchRect.bottom) <= tolerance
+             );
+             
+             /* 检查cursor中心是否在sketch内部 */
+             const isInside = (
+                 cursorCenterX >= sketchRect.left &&
+                 cursorCenterX <= sketchRect.right &&
+                 cursorCenterY >= sketchRect.top &&
+                 cursorCenterY <= sketchRect.bottom
+             );
+             
+             /* 边缘重叠时改变边框颜色 */
+             if(Math.abs(cursorCenterX - sketchRect.left) <= tolerance) {
+                 sketch.style.borderLeftColor = '#6BABF5';
+             } else {
+                 sketch.style.borderLeftColor = '#93d1ed';
+             }
+             if(Math.abs(cursorCenterX - sketchRect.right) <= tolerance) {
+                 sketch.style.borderRightColor = '#6BABF5';
+             } else {
+                 sketch.style.borderRightColor = '#93d1ed';
+             }
+             if(Math.abs(cursorCenterY - sketchRect.top) <= tolerance) {
+                 sketch.style.borderTopColor = '#6BABF5';
+             } else {
+                 sketch.style.borderTopColor = '#93d1ed';
+             }
+             if(Math.abs(cursorCenterY - sketchRect.bottom) <= tolerance) {
+                 sketch.style.borderBottomColor = '#6BABF5';
+             } else {
+                 sketch.style.borderBottomColor = '#93d1ed';
+             }
+             
+             /* 当cursor中心在sketch上方且不在边缘容差范围内时改变sketch样式 */
+             if(isInside && !isOnEdge) {
+                 sketch.style.backgroundColor = 'rgba(202,234,248,0.3)';
+                 sketch.style.borderColor = '#000000';
+             } else if(!isOnEdge) {
+                 sketch.style.backgroundColor = 'rgba(147, 209, 237, 0.3)';
+                 sketch.style.borderColor = '#93d1ed';
+             }
+         });
+     }
+     
+     /* 定期检查重叠状态 */
+     setInterval(checkOverlap, 100);
+
+     </script>       
+</body>
+
+</html>
