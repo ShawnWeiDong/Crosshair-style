@@ -76,11 +76,14 @@
         }
 
         html {
-            -webkit-user-select: none;
-            /* Disable text selection */
-            -webkit-touch-callout: none;
-            -webkit-tap-highlight-color: transparent;
-            /* Disable tap highlight */
+            /* 原禁用属性 */
+            /* -webkit-user-select: none; */
+            /* -webkit-touch-callout: none; */
+            /* -webkit-tap-highlight-color: transparent; */
+            
+            /* 新值 */
+            -webkit-user-select: auto;
+            -webkit-tap-highlight-color: initial;
         }
 
         #cursor-top, #cursor-bottom {
@@ -203,7 +206,7 @@
         <div class="top-section">
             <div class="section-label">Single color cursor</div>
             <div class="grid-container">
-                <img src="assets/gird.png" alt="grid background" style="height: 100%; width: auto; object-fit: cover;">
+                <img src="assets/gird.png" alt="grid background" style="height: 100%; width: 100%; object-fit: cover;">
             </div>
             <div class="sketch-container" style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 1;">
                 <div class="sketch" style="width: 150px; height: 150px;"></div>
@@ -221,7 +224,7 @@
         <div class="bottom-section">
             <div class="section-label">Contrast color cursor</div>
             <div class="grid-container">
-                <img src="assets/gird.png" alt="grid background" style="height: 100%; width: auto; object-fit: cover;">
+                <img src="assets/gird.png" alt="grid background" style="height: 100%; width: 100%; object-fit: cover;">
             </div>
             <div class="sketch-container" style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 1;">
                 <div class="sketch" style="width: 150px; height: 150px;"></div>
@@ -303,7 +306,7 @@
                 /* 添加偏移量：向右20px，向上20px */
                 const cursorWidth = activeCursor.getAttribute('width');
                 const cursorHeight = activeCursor.getAttribute('height');
-                const offsetX = 0;
+                const offsetX = 0; /* 向右偏移20px */
                 const offsetY = -60; /* 向上偏移20px */
                 
                 /* 计算光标位置，考虑偏移量 */
@@ -526,6 +529,76 @@
      
      /* 定期检查重叠状态 */
      setInterval(checkOverlap, 100);
+
+     let lastClickTime = 0;
+     let isDoubleClick = false;
+
+     /* 添加鼠标点击事件监听 */
+     document.addEventListener('mousedown', function(e) {
+         const currentTime = new Date().getTime();
+         const timeDiff = currentTime - lastClickTime;
+
+         if (timeDiff < 800) {
+             /* 双击判定成立 */
+             isDoubleClick = true;
+
+             /* 确定点击区域 */
+             const isTopSection = e.clientY < window.innerHeight / 2;
+             
+             /* 设置当前活动区域和光标 */
+             activeSection = isTopSection ? document.querySelector('.top-section') : document.querySelector('.bottom-section');
+             activeCursor = isTopSection ? cursorTop : cursorBottom;
+
+             /* 计算相对位置 */
+             const sectionRect = activeSection.getBoundingClientRect();
+             const relativeY = e.clientY - sectionRect.top;
+             
+             /* 设置光标位置 */
+             const cursorWidth = activeCursor.getAttribute('width');
+             const cursorHeight = activeCursor.getAttribute('height');
+             activeCursor.style.left = (e.clientX - cursorWidth/2) + 'px';
+             activeCursor.style.top = (relativeY - cursorHeight/2) + 'px';
+
+             /* 显示光标 */
+             activeCursor.style.display = 'block';
+
+             /* 初始化触摸点位置 */
+             initialTouch = {
+                 x: e.clientX,
+                 y: e.clientY
+             };
+         }
+         
+         lastClickTime = currentTime;
+     });
+
+     /* 添加鼠标松开事件监听 */
+     document.addEventListener('mouseup', function() {
+         if (isDoubleClick && activeCursor) {
+             activeCursor.style.display = 'none';
+             isDoubleClick = false;
+         }
+     });
+
+     /* 添加鼠标移动事件支持 */
+     document.addEventListener('mousemove', function(e) {
+         if (!isDoubleClick || !activeCursor || activeCursor.style.display !== 'block') return;
+
+         /* 计算移动距离 */
+         const deltaX = e.clientX - initialTouch.x;
+         const deltaY = e.clientY - initialTouch.y;
+
+         /* 更新光标位置 */
+         const currentLeft = parseFloat(activeCursor.style.left) || 0;
+         const currentTop = parseFloat(activeCursor.style.top) || 0;
+         
+         activeCursor.style.left = (currentLeft + deltaX) + 'px';
+         activeCursor.style.top = (currentTop + deltaY) + 'px';
+
+         /* 更新初始位置 */
+         initialTouch.x = e.clientX;
+         initialTouch.y = e.clientY;
+     });
 
      </script>       
 </body>
